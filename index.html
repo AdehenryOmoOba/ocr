@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Receipt OCR</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  </head>
+  <body>
+    <input type="file" id="receiptInput" accept="image/*" />
+    <button onclick="processReceipt()">Process Receipt</button>
+
+    <script>
+      function processReceipt() {
+        const fileInput = document.getElementById('receiptInput');
+        const file = fileInput.files[0];
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const dataUrl = e.target.result;
+          recognizeText(dataUrl);
+        };
+        reader.readAsDataURL(file);
+      }
+
+      async function recognizeText(dataUrl) {
+        Tesseract.recognize(dataUrl,'eng')
+        .then(({ data: { text } }) => {
+          console.log(text);
+          saveToExcel(text);
+        })
+      }
+
+      function saveToExcel(text) {
+        const worksheet = XLSX.utils.aoa_to_sheet([text.split('\n')]);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Receipt');
+        const excelData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+
+        const blob = new Blob([excelData], { type: 'application/octet-stream' });
+        saveAs(blob, 'receipt.xlsx');
+      }
+    </script>
+  </body>
+</html>
